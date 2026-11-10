@@ -1,0 +1,148 @@
+{
+  "ticker": "KO",
+  "start": "2000-01-03",
+  "h": 5,
+  "step": 5,
+  "dataset_id": "ds_01a6b7a6c4",
+  "backtest_id": "bt_244efaf8e0",
+  "n_origins": 99,
+  "backtest_first": "2024-10-29",
+  "backtest_last": "2026-10-14",
+  "describe": {
+    "ok": true,
+    "rows": 6745,
+    "first": "2000-01-03",
+    "last": "2026-10-27",
+    "last_close": 91.18,
+    "vol_20d_ann": 0.222964,
+    "vol_1y_ann": 0.18949,
+    "start": "2000-01-03",
+    "end": "2026-10-27",
+    "last_date": "2026-10-27",
+    "n": 6745,
+    "vol_daily": 0.01282455132498964,
+    "mean_ret": 0.0002848315951156345
+  },
+  "forecast": {
+    "naive": {
+      "ok": true,
+      "model": "naive",
+      "h": 5,
+      "origin": "2026-10-27",
+      "mean": 0.0,
+      "lo": -0.0449028,
+      "hi": 0.0449028,
+      "price_mean": 91.18
+    },
+    "drift": {
+      "ok": true,
+      "model": "drift",
+      "h": 5,
+      "origin": "2026-10-27",
+      "mean": 0.00576588,
+      "lo": -0.0391369,
+      "hi": 0.0506686,
+      "price_mean": 91.7073
+    },
+    "arima": {
+      "ok": true,
+      "model": "arima",
+      "h": 5,
+      "origin": "2026-10-27",
+      "mean": 0.00344926,
+      "lo": -0.0414535,
+      "hi": 0.048352,
+      "price_mean": 91.495
+    }
+  },
+  "metrics": {
+    "naive": {
+      "ok": true,
+      "model": "naive",
+      "n": 99,
+      "mae": 0.0178662,
+      "rmse": 0.0236712,
+      "dir_acc": null,
+      "n_direction": 0,
+      "coverage": 0.909091,
+      "n_intervals": 99,
+      "width": 0.0792365,
+      "diracc": null,
+      "cov90": 0.909091
+    },
+    "drift": {
+      "ok": true,
+      "model": "drift",
+      "n": 99,
+      "mae": 0.0180515,
+      "rmse": 0.0234695,
+      "dir_acc": 0.494949,
+      "n_direction": 99,
+      "coverage": 0.909091,
+      "n_intervals": 99,
+      "width": 0.0792365,
+      "diracc": 0.494949,
+      "cov90": 0.909091
+    },
+    "arima": {
+      "ok": true,
+      "model": "arima",
+      "n": 99,
+      "mae": 0.0179612,
+      "rmse": 0.0234871,
+      "dir_acc": 0.494949,
+      "n_direction": 99,
+      "coverage": 0.919192,
+      "n_intervals": 99,
+      "width": 0.0792365,
+      "diracc": 0.494949,
+      "cov90": 0.919192
+    }
+  },
+  "dm": {
+    "drift": {
+      "ok": true,
+      "model_b": "naive",
+      "model": "drift",
+      "h": 5,
+      "dm": -0.584657,
+      "p": 0.560122,
+      "n": 99,
+      "mean_diff": -9.50601e-06,
+      "verdict": "no difference",
+      "loss": "squared",
+      "step": 5,
+      "hac_lags": 0,
+      "h_eff": 1,
+      "p_value": 0.560122
+    },
+    "arima": {
+      "ok": true,
+      "model_b": "naive",
+      "model": "arima",
+      "h": 5,
+      "dm": -0.934579,
+      "p": 0.352302,
+      "n": 99,
+      "mean_diff": -8.68105e-06,
+      "verdict": "no difference",
+      "loss": "squared",
+      "step": 5,
+      "hac_lags": 0,
+      "h_eff": 1,
+      "p_value": 0.352302
+    }
+  },
+  "garch": {
+    "ok": true,
+    "h": 5,
+    "model": "GARCH(1,0,1)-t",
+    "sigma": 0.0272965,
+    "lo": -0.0449028,
+    "hi": 0.0449028
+  },
+  "verdict": {
+    "drift": "No significant difference from naive (DM p=0.560)",
+    "arima": "No significant difference from naive (DM p=0.352)"
+  }
+}

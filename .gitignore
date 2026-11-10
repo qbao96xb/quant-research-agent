@@ -1,0 +1,58 @@
+
+# Python
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.venv/
+.env
+
+# Conda
+environment.local.yml
+
+# Data and model artifacts
+data/raw/*.parquet
+data/raw/snapshots/
+!data/raw/manifest.csv
+data/processed/*
+results/*
+/models/
+*.pt
+*.pth
+*.safetensors
+
+# Keep directory placeholders
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!results/.gitkeep
+
+# Pytest
+.pytest_cache/
+
+# Report temp folders (safety net)
+*.tmp/
+
+# Agent artifacts and caches (check these paths exist in your repo)
+artifacts/bt_cache/
+artifacts/jobs/
+artifacts/sessions/
+data/cache/
+logs/
+results/
+artifacts/calib.json
+data/raw/manifest.csv
+
+# Generated, reproducible outputs (untracked on purpose)
+data/finetune/
+outputs/**/logs/
+*.log
+
+# Local-only files (machine paths, IDE state, UI captures, secrets)
+.idea/
+.DS_Store
+prof.out
+*.prof
+.gradio/
+configs/daily_small.yaml
+.env.*
+*.pem
+*.key

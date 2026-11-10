@@ -1,0 +1,54 @@
+# Template: Kronos daily fine-tune (US equities, horizon 5)
+# {ROOT} is replaced by scripts/make_config.py
+
+data:
+  data_path: "{ROOT}/data/finetune"      # folder with one CSV per ticker
+  lookback_window: 30
+  predict_window: 5
+  max_context: 512
+  clip: 5.0
+  train_ratio: 0.9
+  val_ratio: 0.1
+  test_ratio: 0.0
+
+training:
+  tokenizer_epochs: 1                     # unused while train_tokenizer is false
+  basemodel_epochs: 5
+  batch_size: 16
+  log_interval: 50
+  num_workers: 0
+  seed: 1340
+
+  tokenizer_learning_rate: 0.0002         # unused while train_tokenizer is false
+  predictor_learning_rate: 0.000005
+
+  adam_beta1: 0.9
+  adam_beta2: 0.95
+  adam_weight_decay: 0.01
+
+  accumulation_steps: 1
+
+model_paths:
+  pretrained_tokenizer: "NeoQuasar/Kronos-Tokenizer-base"
+  pretrained_predictor: "NeoQuasar/Kronos-small"
+
+  exp_name: "kronos_ft_small_listc"
+  base_path: "{ROOT}/outputs"
+
+  base_save_path: ""
+  finetuned_tokenizer: "NeoQuasar/Kronos-Tokenizer-base"   # reuse pretrained
+
+  tokenizer_save_name: "tokenizer"
+  basemodel_save_name: "basemodel"
+
+experiment:
+  name: "kronos_daily_finetune"
+  description: "Daily US equities, multi-ticker, horizon 5"
+  use_comet: false
+  train_tokenizer: false
+  train_basemodel: true
+  skip_existing: false
+
+device:
+  use_cuda: false
+  device_id: 0
