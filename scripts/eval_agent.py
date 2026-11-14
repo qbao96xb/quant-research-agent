@@ -6,6 +6,7 @@ PYTHONPATH=src:. python -m scripts.eval_agent --name qwen3.5-9b --model qwen3.5:
 """
 import argparse
 import json
+import subprocess
 from collections import deque
 from datetime import datetime
 from pathlib import Path
@@ -22,7 +23,25 @@ from src.agent_eval.aggregate import load_cases, summarize
 from src.agent_eval.scoring import score
 from src.agent_eval.runner import run_all
 from src.agent_eval.paths import CASES_PATH
+from src.data.asof import DATA_ASOF, set_asof
 from src.backtest.jobs import cancel_running_jobs
+
+EXECUTOR_LOCK = Path(__file__).resolve().parents[1] / "handoff" / ".executor.lock"
+
+
+def _git(*args):
+    try:
+        out = subprocess.run(["git", *args], capture_output=True, text=True, timeout=10)
+    except Exception:
+        return ""
+    return out.stdout.strip()
+
+
+def git_info():
+    """Commit, branch and dirty flag, so an eval run names the code it tested."""
+    dirty = _git("status", "--porcelain", "--untracked-files=no")
+    return dict(commit=_git("rev-parse", "--short", "HEAD"), branch=_git("branch", "--show-current"), dirty=bool(dirty))
+
 
 def case_ids(split, cases_path=CASES_PATH):
     cases = load_cases(cases_path)
@@ -96,19 +115,21 @@ def _isolated(bar):
             cancel_running_jobs()
     return cb
 
-def evaluate(llm, out, n=3, split="dev", only=None, resume=False, meta=None, progress=True):
-    ids = set(only) if only else set(case_ids(split))
-    bar = Progress() if progress else None
+def evaluate(llm, out, n=3, split="dev", only=None, resume=False, meta=None, progress=True, cases_path=CASES_PATH):
+    if EXECUTOR_LOCK.exists():
+        raise SystemExit(f"executor run active ({EXECUTOR_LOCK}); wait for it to finish or remove a stale lock")
+    ids = set(only) if only else set(case_ids(split, cases_path))
+    bar = Progress(cases_path) if progress else None
     cancel_running_jobs()                      # clean start
     try:
         if bar:
             bar.start()
-        run_all(llm, out, n=n, only=ids, resume=resume, on_event=_isolated(bar))
+        run_all(llm, out, n=n, only=ids, cases_path=cases_path, resume=resume, on_event=_isolated(bar))
     finally:
         cancel_running_jobs()                  # clean end, even after Ctrl-C
         if bar:
             bar.close()
-    totals, df, tables = summarize(out)
+    totals, df, tables = summarize(out, cases_path)
 
     out = Path(out)
     (out / "summary.json").write_text(
@@ -138,13 +159,16 @@ def main():
     ap.add_argument("--out", help="fixed folder (needed for --resume)")
     ap.add_argument("--resume", action="store_true")
     ap.add_argument("--no-progress", action="store_true")
+    ap.add_argument("--cases", default=str(CASES_PATH), help="cases YAML (default: frozen cases.yaml)")
+    ap.add_argument("--data-asof", default=DATA_ASOF, help="cap price data at this date; 'none' = latest data")
     a = ap.parse_args()
+    asof = set_asof(a.data_asof)
 
     out = a.out or f"results/eval/{a.name}_{a.prompt_ver}_{a.split}_{datetime.now():%Y%m%d_%H%M}"
-    meta = dict(name=a.name, model=a.model, n=a.n, split=a.split,
-                only=a.only, prompt_ver=a.prompt_ver, started=f"{datetime.now():%Y-%m-%d %H:%M}")
+    meta = dict(**git_info(), name=a.name, model=a.model, n=a.n, split=a.split,
+                only=a.only, prompt_ver=a.prompt_ver, cases=a.cases, data_asof=asof, started=f"{datetime.now():%Y-%m-%d %H:%M}")
     totals, _, tables = evaluate(OpenAICompatLLM(model=a.model), out, n=a.n, split=a.split,
-                                 only=a.only, resume=a.resume, meta=meta,
+                                 only=a.only, resume=a.resume, meta=meta, cases_path=a.cases,
                                  progress=not a.no_progress)
     print_report(totals, tables)
     print(f"\nSaved to {out}")

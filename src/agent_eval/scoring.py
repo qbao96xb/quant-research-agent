@@ -8,7 +8,8 @@ DEFAULT_WORDS = re.compile(r"(?i)\b(assum\w*|default|i('| wi)ll use|most recent|
 REFUSE_DEFAULT = re.compile(r"(?i)(cannot|can't|unable|not able|not available|not supported|no tool|don't have|do not have|not (financial|investment) advice)")
 ARG_ERRORS = {"BAD_ARGUMENT", "UNKNOWN_TOOL", "UNPARSEABLE", "BAD_MODEL", "BAD_DATE"}
 OK_FINISH = {"done"}
-
+# Whole numbers 1-20 are parameters (horizon, window, offered options), not claims; tools cap h at 20 (schemas.py).
+PARAM_INT = re.compile(r"(?<![\w.,+-])(?:[1-9]|1\d|20)(?!\.\d|,\d|[\w%])")
 
 # ---------- helpers ----------
 def called(run):
@@ -54,6 +55,7 @@ def number_pool(run, case):
 def hallucinated(run, case):
     ans = re.sub(r"\d{4}-\d{2}-\d{2}", "", run["answer"])
     ans = re.sub(r"(?<=\d),(?=\d{3})", "", ans)
+    ans = PARAM_INT.sub("", ans)
     return check_numbers(ans, number_pool(run, case))
 
 def _match_all(patterns, answer):

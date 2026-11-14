@@ -10,6 +10,7 @@ KRONOS_SAMPLES = 5
 KRONOS_LOOKBACK = 120
 KRONOS_T = 0.3   # manual choice: best validation row at lookback 120
 MIN_HIST = 500               # must match walk_forward's min_hist
+ARIMA_CFG = dict(lookback=1000, refit_every=1, warm_start=False)   # forecasts and tuning
 
 
 def make_vol(cached: bool = False):

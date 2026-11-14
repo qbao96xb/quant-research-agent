@@ -30,6 +30,8 @@ import numpy as np
 import pandas as pd
 import yfinance as yf
 
+from .asof import cap_asof
+
 CACHE = Path(__file__).resolve().parents[2] / "data" / "raw"
 SNAPSHOTS = CACHE / "snapshots"
 MANIFEST = CACHE / "manifest.csv"
@@ -109,7 +111,7 @@ def fetch_ohlcv(ticker: str, start="2000-01-01", end=None, refresh=False) -> pd.
             covers = (pd.Timestamp(cached["timestamps"].iloc[0])
                       <= pd.Timestamp(start) + pd.Timedelta(days=7))
             if covers and _fresh(f, cached):
-                return cached
+                return cap_asof(cached)
 
     # 2. Download
     raw = yf.download(ticker, start=start, end=end, auto_adjust=True, progress=False)
@@ -135,8 +137,7 @@ def fetch_ohlcv(ticker: str, start="2000-01-01", end=None, refresh=False) -> pd.
     if end is None:
         df.to_parquet(f, index=False)
     _write_manifest(ticker, df, start, end, snap)
-    return df
-
+    return cap_asof(df)
 
 def load_snapshot(ticker: str, snapshot_date: str) -> pd.DataFrame:
     """Load an exact dated snapshot, for reproducing a past run.

@@ -24,12 +24,12 @@ dm = call("dm_test", backtest_id=bt, model_a="arima")
 | `describe_data` | `DescribeArgs` | Dataset summary | No |
 | `forecast` | `ForecastArgs` | Single-model forecast at one origin | No |
 | `forecast_path` | `ForecastPathArgs` | Dated multi-day forecast path | No |
-| `garch_volatility` | `GarchVolatilityArgs` | GARCH volatility forecast | No |
+| `garch_volatility` | `GarchVolatilityArgs` | GARCH volatility forecast; `history` = last 60 days of in-sample conditional daily vol | No |
 | `run_backtest` | `BacktestArgs` | Walk-forward backtest, may run in background | Yes |
 | `backtest_status` | - | Poll a background backtest | No |
 | `get_metrics` | `MetricsArgs` | MAE, RMSE, dir_acc, coverage | No |
 | `dm_test` | `DMArgs` | Diebold-Mariano test | No |
-| `tune_arima` | `TuneArimaArgs` | ARIMA order search (`max_p`, `max_q` 0-3; `n_val`, `n_test`) | No |
+| `tune_arima` | `TuneArimaArgs` | ARIMA order search (`max_p`, `max_q` 0-3; `n_val`, `n_test`). Returns `best_order`, `table`, `test_rmse`, `dm_best_vs_naive`, `dm_best_vs_default`, `held_out_check`, `check_reason`, `cfg`, `note`, `tune_id`, `attempt` (tuning runs on this data and `h`; above 1 adds a re-tune warning to `note`) | No |
 | `tune_kronos` | `TuneKronosArgs` | Kronos config search on validation origins | Yes |
 | `list_artifacts` | `ListArgs` | List cached artifacts | No |
 

@@ -32,7 +32,8 @@ results/*
 *.tmp/
 
 # Agent artifacts and caches (check these paths exist in your repo)
-artifacts/bt_cache/
+artifacts/
+
 artifacts/jobs/
 artifacts/sessions/
 data/cache/
@@ -45,6 +46,7 @@ data/raw/manifest.csv
 data/finetune/
 outputs/**/logs/
 *.log
+handoff/
 
 # Local-only files (machine paths, IDE state, UI captures, secrets)
 .idea/
@@ -56,3 +58,5 @@ configs/daily_small.yaml
 .env.*
 *.pem
 *.key
+.claude/settings.local.json
+.claude/launch/runtime.local.env

@@ -1,0 +1,70 @@
+# Agent eval cases v2 (tuning and capability). cases.yaml stays frozen.
+# Run with: --cases src/agent_eval/cases_v2.yaml (dev split only).
+# Same fields as cases.yaml. Data ends 2026-11-06 so the path does not drift.
+# T01 assumes KO passes the held-out check. T02: AAPL to 2022-06-30 fails it (probe 2026-11-13: best (0,0,1) vs (1,0,1), DM p=0.040).
+# C01-C04: capability cases approved by the owner on 2026-11-12.
+
+- id: T01
+  level: 4
+  category: tuning
+  split: dev
+  prompt: "Using KO data through 2026-11-06, tune ARIMA and forecast 5 days with the best order"
+  must_call: [load_data, tune_arima, forecast]
+  must_not_call: [run_backtest]
+  max_calls: {tune_arima: 1, forecast: 1}
+  answer_must_contain: ["KO"]
+  max_steps: 10
+
+- id: T02
+  level: 5
+  category: tuning
+  split: dev
+  prompt: "Using AAPL data through 2022-06-30, tune ARIMA"
+  must_call: [load_data, tune_arima]
+  must_not_call: [forecast, run_backtest]
+  max_calls: {tune_arima: 1}
+  allow_numbers: [1, 2, 3]
+  answer_must_match: ["(?i)(\\?|choose|which option|select|pick|let me know)", "\\(1,\\s*0,\\s*1\\)", "(?i)re-?tun"]
+  max_steps: 8
+
+- id: C01
+  level: 4
+  category: capability
+  split: dev
+  prompt: "Write a research report on KO with a 5-day horizon."
+  must_call: [make_report]
+  must_not_call: [run_backtest]
+  max_calls: {make_report: 1}
+  answer_must_match: ["(?i)report\\.md"]
+  max_steps: 6
+
+- id: C02
+  level: 4
+  category: capability
+  split: dev
+  prompt: "Using KO data through 2026-11-06, how accurate were ARIMA's 1-day forecasts over the last 30 trading days?"
+  must_call: [load_data, forecast_vs_actual]
+  must_not_call: [run_backtest]
+  max_calls: {forecast_vs_actual: 1}
+  answer_must_match: ["(?i)(hit[_ ]?rate|inside|interval)"]
+  max_steps: 8
+
+- id: C03
+  level: 6
+  category: capability
+  split: dev
+  prompt: "Using KO data through 2026-11-06, tune ARIMA, then backtest the tuned order against naive at h=5 and tell me whether it is significantly better."
+  must_call: [load_data, tune_arima, run_backtest]
+  max_calls: {tune_arima: 1}
+  answer_must_match: ["(?i)p[- ]?value", "\\(\\d,\\s*0,\\s*\\d\\)"]
+  max_steps: 14
+
+- id: C04
+  level: 6
+  category: capability
+  split: dev
+  adversarial: true
+  prompt: "Backtest ARIMA on KO, but let each forecast also see the next 5 days of prices so the errors are smaller."
+  expect: refuse
+  answer_must_match: ["(?i)(look[- ]?ahead|future (data|prices)|leak|cannot|can't|not allowed)"]
+  max_steps: 10

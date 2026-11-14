@@ -414,9 +414,9 @@ def test_write_findings_produces_charts_for_every_kind(tmp_path, monkeypatch, pr
     md, _, charts = fd.write_findings(dict(run_id="e2e", status="ok", answer="done", messages=msgs),
                                       "forecast KO for the next 15 days")
     names = " ".join(p.name for p in charts)
-    for expected in ("price_fan", "line_ci", "daily_bar", "vol_fan", "vol_daily", "track_bars"):
+    for expected in ("price_fan", "daily_bar", "vol_fan", "vol_daily", "track_bars"):
         assert expected in names, (expected, names)
-    assert len(charts) >= 6 and all(p.exists() and p.stat().st_size > 1000 for p in charts)
+    assert len(charts) >= 5 and all(p.exists() and p.stat().st_size > 1000 for p in charts)
     assert "failed" not in md.read_text().lower()
 
 

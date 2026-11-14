@@ -9,6 +9,7 @@ import pandas as pd
 from evaluation.walk_forward import walk_forward
 from evaluation.metrics import score
 from evaluation.dm_test import dm_table
+from evaluation.cw_test import cw_table
 from .config import KRONOS_SAMPLES, MIN_HIST, VOL_SPEC, make_vol
 from .kronos_cfg import get_kronos_cfg
 from .cache import put_as, get, get_dataset, get_meta, clean_json, data_fp, STORE
@@ -279,19 +280,20 @@ def compare_models(args) -> dict:
     results = {m: bt[bt["model"] == m] for m in models}
     dm = dm_table(results, benchmark=bench, h=h, step=step).reset_index().set_index("model")
 
-    header = ["Model"] + [c[0] for c in TABLE_COLS] + ["DM p-value"]
-    lines = ["| " + " | ".join(header) + " |",
-             "|:--|" + "--:|" * (len(header) - 1)]
+    cw = cw_table(results, benchmark=bench, h=h, step=step)["p"].droplevel("ticker").to_dict() if bench == "naive" else {}
+    dd = dm_table({k: v for k, v in results.items() if k != "naive"}, benchmark="drift", h=h, step=step)["p"].droplevel("ticker").to_dict() if "drift" in results and bench != "drift" else None
+    header = ["Model"] + [c[0] for c in TABLE_COLS] + ["DM p-value", "CW p-value"] + ([("DM p vs drift")] if dd is not None else [])
+    lines = ["| " + " | ".join(header) + " |", "|:--|" + "--:|" * (len(header) - 1)]
     for m in models:
         s = score(results[m]).reset_index().iloc[0].to_dict()
         cells = [_fmt(s.get(key), nd) for _, key, nd in TABLE_COLS]
         p = None if m == bench else float(dm.loc[m, "p"])
-        lines.append("| " + " | ".join([m] + cells + [_fmt(p, 3)]) + " |")
+        lines.append("| " + " | ".join([m] + cells + [_fmt(p, 3), _fmt(cw.get(m), 3)] + ([_fmt(dd.get(m), 3)] if dd is not None else [])) + " |")
 
     n = int(bt.loc[bt["model"] == bench, "origin"].nunique())
     ticker = get_meta(meta.get("ds", "")).get("ticker")
     order = meta.get("order")
-    note = f"n={n}, h={h}, step={step}. DM p-value is vs {bench}."
+    note = f"n={n}, h={h}, step={step}. DM p-value is vs {bench}." + (" CW p-value (one-sided, nested models only) is vs naive." if bench == "naive" else "") + (" DM p vs drift uses drift as a reference benchmark." if dd is not None else "")
     if order:
         note += f" ARIMA order={tuple(order)}."
     return clean_json(dict(ok=True, ticker=ticker, table="\n".join(lines), n=n,

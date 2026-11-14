@@ -2,6 +2,7 @@
 from pathlib import Path
 
 from .errors import ToolError
+from .validation import check_ticker
 from .registry_core import tool
 from .schemas import ReportArgs
 
@@ -19,8 +20,9 @@ def make_report(args) -> dict:
     """
     from src.report.pipeline import make_report as build   # lazy: avoids a circular import
     models = list(dict.fromkeys(["naive", *args.models]))
+    ticker = check_ticker(args.ticker)   # same rule as load_data; outside the try so BAD_TICKER is not relabelled
     try:
-        md = build(args.ticker.upper(), llm=None, h=args.h, models=tuple(models), start=args.start)
+        md = build(ticker, llm=None, h=args.h, models=tuple(models), start=args.start)
     except Exception as e:
         raise ToolError("REPORT_FAILED", f"{type(e).__name__}: {e}",
                         "Check the ticker, or try a smaller model list.")

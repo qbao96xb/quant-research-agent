@@ -5,7 +5,8 @@ from scipy.stats import norm
 import numpy as np
 from models.baselines import Naive, Drift, Arima
 from models.volatility import add_intervals
-from .config import KRONOS_SAMPLES, make_vol
+from .config import ARIMA_CFG, KRONOS_SAMPLES, make_vol
+from .vol_history import vol_history
 from .kronos_cfg import get_kronos_cfg
 from .cache import get_dataset, clean_json, get_meta
 from .validation import check_origin, check_horizon
@@ -27,7 +28,6 @@ def make_model(name, order=None):
         return Arima(order=tuple(order), **ARIMA_CFG)
     return FACTORIES[name]()
 
-ARIMA_CFG = dict(lookback=1000, refit_every=1, warm_start=False)
 FACTORIES = {
     "naive": lambda: Naive(),
     "drift": lambda: Drift(lookback=250),
@@ -106,7 +106,7 @@ def garch_volatility(args) -> dict:
             for k in range(args.h)]
     return clean_json(dict(ok=True, h=args.h, model=VOL.name, ticker=tk,
                            level=_label(args.level), sigma=cum[-1],
-                           lo=-z * cum[-1], hi=z * cum[-1], path=path))
+                           lo=-z * cum[-1], hi=z * cum[-1], path=path, history=vol_history(hist)))
 
 @tool(ForecastPathArgs)
 def forecast_path(args) -> dict:

@@ -8,6 +8,9 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from . import charts_v2 as V
+from . import charts_hist as H
+from . import charts_vol as C
 
 ROOT = Path(__file__).resolve().parents[2]
 ID_COLS = ("ticker", "symbol", "model", "method")
@@ -300,7 +303,7 @@ def merge(frames):
     """Group tables of the same kind and columns, so tickers share one figure."""
     groups = {}
     for _, df in frames:
-        k = kind_of(df)
+        k = V.kind_of(df) or kind_of(df)
         if k:
             groups.setdefault((k, tuple(df.columns)), []).append(df)
     return [(k, pd.concat(p, ignore_index=True).drop_duplicates()) for (k, _), p in groups.items()]
@@ -744,7 +747,7 @@ CHARTS = {
         "overlay": (overlay, ("overlay", "together", "same chart", "same plot", "compare")),
     },
     "metrics": {
-        "bar": (metric_bar, ("bar", "bars", "compare", "comparison", "rank")),
+        "bar": (V.metric_grid, ("bar", "bars", "compare", "comparison", "rank")),
         "dm": (dm_chart, ("dm", "significance", "significant", "p-value", "p value")),
         "rel_rmse": (rel_rmse, ("relative", "ratio", "vs naive", "versus naive")),
         "scatter": (cov_width, ("coverage", "width", "scatter", "calibration")),
@@ -771,6 +774,8 @@ DEFAULT["vol"] = ["vol_fan", "vol_daily"]
 CHARTS["track"] = {"track_bars": (track_bars, ("predicted", "actual", "track", "evaluat", "bar", "bars")),
                    "track_scatter": (track_scatter, ("scatter", "calibration", "mincer", "slope"))}
 DEFAULT["track"] = ["track_bars", "track_scatter"]
+V.register(CHARTS, DEFAULT, SPEC, LABEL)
+C.register(CHARTS, DEFAULT, SPEC, LABEL)
 
 def _hit(q, words):
     return any(re.search(rf"\b{re.escape(w)}\b", q) for w in words)
@@ -787,7 +792,7 @@ def make_charts(kind, df, title, question, out, idx):
     num = coerce(df)
     spec = SPEC[kind](num)
     paths, warns = [], []
-    for name in pick_kinds(kind, question):
+    for name in V.plan(kind, question, CTX.get("intents", ())):
         try:
             fig = CHARTS[kind][name][0](num, spec)
         except Exception as e:
@@ -830,8 +835,10 @@ def write_findings(result, question=""):
     head = [f"# Findings: {question or run_id}", "",
             f"> run `{run_id}`, status `{result['status']}`", "",
             "## Answer", "", result["answer"], ""]
-    CTX["history"] = _history(result["messages"])
+    CTX["history"] = _history(result["messages"], n=H.history_len(result["messages"]))
     CTX["level"] = _level(result["messages"])
+    CTX["intents"] = V.intents(result["messages"])
+    CTX["cond_vol"] = C.cond_vol(result["messages"])
     frames = list(tool_tables(result["messages"]))
     if _wants_errors(question):
         frames += error_frames(result["messages"])

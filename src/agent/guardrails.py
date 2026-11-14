@@ -21,7 +21,7 @@ def _run(name, args, timeout):
     except Exception as e:
         return _err("TOOL_CRASH", f"{type(e).__name__}: {e}")
 
-def safe_call(name, raw_args, timeout=60):
+def safe_call(name, raw_args, timeout=300):   # = loop.TOOL_TIMEOUT (test_tool_timeout.py)
     t0 = time.time()
     if name not in REGISTRY:
         r = _err("UNKNOWN_TOOL", f"{name} not in {sorted(REGISTRY)}")

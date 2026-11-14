@@ -5,8 +5,8 @@ from .number_check import check_numbers
 PROMPT = (Path(__file__).resolve().parents[1] / "agent" / "prompts" / "narrative.md").read_text()
 
 def slim(f):
-    keep = ("ticker", "h", "describe", "forecast", "metrics", "dm", "garch", "verdict")
-    return {k: f[k] for k in keep}
+    keep = ("ticker", "h", "describe", "forecast", "metrics", "dm", "garch", "verdict", "dm_drift", "verdict_drift")
+    return {k: f[k] for k in keep if k in f}
 
 def parse(text):
     parts = re.split(r"###\s*(SUMMARY|INTERPRETATION|CAVEATS)\s*", text)

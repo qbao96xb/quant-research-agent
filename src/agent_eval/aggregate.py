@@ -7,6 +7,8 @@ import yaml
 from src.agent_eval.scoring import score, ARG_ERRORS
 from src.agent_eval.paths import CASES_PATH
 
+LOOP_BLOCKS = {"NO_FALLBACK", "CALL_CAP"}       # deliberate agent-loop blocks, not tool failures
+
 
 def load_cases(path=CASES_PATH):
     return {c["id"]: c for c in yaml.safe_load(Path(path).read_text())}
@@ -35,11 +37,12 @@ def summarize(run_dir, cases_path=CASES_PATH):
             code = (out.get("error") or {}).get("code")
             calls.append(dict(ok=bool(out.get("ok")),
                               expected_err=code in expected,
+                              blocked=code in LOOP_BLOCKS,
                               invalid=code in ARG_ERRORS))
 
     df, c = pd.DataFrame(rows), pd.DataFrame(calls)
     if len(c):
-        c = c[~c.expected_err]                      # expected errors are not failures
+        c = c[~c.expected_err & ~c.blocked]         # expected errors and loop blocks are not failures
     per_case = df.groupby("case").passed.agg(["mean", "any", "all"])
     ans = df[df.has_answer]
 
@@ -51,7 +54,7 @@ def summarize(run_dir, cases_path=CASES_PATH):
         halluc_rate=_safe_mean(ans.n_bad > 0),
         halluc_per_answer=_safe_mean(ans.n_bad),
         lat_median=df.latency.median(), lat_p90=df.latency.quantile(0.9),
-        steps_median=df.steps.median(), n_runs=len(df), n_calls=len(c))
+        steps_median=df.steps.median(), n_runs=len(df), n_calls=len(c), n_blocked=sum(x["blocked"] for x in calls))
 
     labels = (df.fails + "," + df.diag).str.split(",").explode()
     labels = labels.replace("", pd.NA).dropna()

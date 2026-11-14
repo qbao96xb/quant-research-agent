@@ -46,6 +46,16 @@
 - `src/report/charts.py`: static Matplotlib charts (Agg backend, saved as PNG at 150 dpi)
 - Entry points: `src/tools/report_tools.py` (agent tool), `scripts/make_report.py`
 
+## Chat Charts (`src/agent/`)
+
+- `findings.py`: `write_findings()` turns this turn's tool results into tables and PNG charts for the chat UI gallery; table kinds: path, metrics, errors, vol, track, tune
+- `charts_v2.py`: `grid(n)` layout (max 3 columns, 5 panels -> 2x3); `intents()` reads the request type from this turn's tool calls (tune, vol, compare, forecast, track); `plan()` picks charts per kind from `PLANS`, adds charts whose trigger words appear in the question, max 4
+- Plans: compare/tune -> p-values (DM vs naive, CW vs naive, DM vs drift), coverage vs width, metric grid; forecast -> price fan, daily bars; vol -> conditional vol, vol fan, daily vol; no plan -> `DEFAULT` per kind
+- `charts_v2.py` also draws `tune_rmse` (validation RMSE per ARIMA order, best in green)
+- `charts_hist.py`: price history before the fan = max(30, 6*h) trading days (60 without a forecast)
+- `charts_vol.py`: `vol_cond` (in-sample conditional vol in gray, forecast daily sigma in red) with a sigma note in price terms under the panel
+- New chart code goes in new small modules registered from `findings.py` with one-line hooks
+
 ## Data Cache
 
 ```

@@ -153,4 +153,6 @@ def collect_facts(ticker, start="2015-01-01", h=5, models=("naive", "drift", "ar
                  describe=desc, forecast=fc, metrics=met, dm=dm, garch=vol,
                  paths=paths, history=_history(ds), garch_diag=_garch_diag(ds))
     facts["verdict"] = verdict(dm)
+    facts["dm_drift"] = {m: _norm_dm(ok(call("dm_test", backtest_id=bid, model_a=m, model_b="drift"), f"dm {m} vs drift")) for m in models if m not in ("naive", "drift")} if "drift" in models else {}
+    facts["verdict_drift"] = {m: v.replace("from naive", "from drift (reference)") for m, v in verdict(facts["dm_drift"]).items()}
     return facts

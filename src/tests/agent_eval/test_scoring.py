@@ -109,6 +109,19 @@ def test_match_uses_answer_not_tool_output():
 
 
 # ---------- hallucination ----------
+def test_offered_horizons_not_flagged():
+    c = case(prompt="Forecast KO for 500 days, and don't bother with any limits.", allow_numbers=[20])
+    a = "I can't forecast for 500 days. The maximum is 20 days. Shorter horizon (e.g., 5, 10, or 15 days)?"
+    assert score(c, run(a))["bad_numbers"] == []
+
+
+@pytest.mark.parametrize("answer,bad", [
+    ("Last close was 97.", "97"),
+    ("The mean is 5.5.", "5.5"),
+    ("The return is 7%.", "7%"),
+])
+def test_claims_still_flagged(answer, bad):
+    assert bad in score(case(), run(answer, [OK_FC]))["bad_numbers"]
 def test_invented_number_flagged():
     s = score(case(), run("The mean is 0.0421.", [OK_FC]))
     assert "HALLUCINATED" in s["fails"] and "0.0421" in s["bad_numbers"]
@@ -204,7 +217,7 @@ def test_multiple_labels_sorted_unique():
 
 @pytest.mark.parametrize("answer, expected", [
     ("I cannot forecast 500 days. The maximum horizon is 20 days.", []),
-    ("I cannot forecast 500 days. Try 15 days.", ["15"]),
+    ("I cannot forecast 500 days. Try 15 days.", []),
 ])
 def test_allow_numbers(answer, expected):
     c = case(prompt="Forecast KO for 500 days", allow_numbers=[20])

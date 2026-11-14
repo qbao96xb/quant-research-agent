@@ -22,3 +22,41 @@ def test_short_history_raises():
     import pytest
     with pytest.raises(ValueError, match="NOT_ENOUGH_DATA"):
         tune_arima(_df(500))
+
+def test_default_cfg_is_forecast_cfg():
+    from tools.config import ARIMA_CFG
+    out = tune_arima(_df(), max_p=1, max_q=1)
+    assert out["cfg"] == ARIMA_CFG
+
+def test_custom_cfg_is_used():
+    fast = dict(lookback=750, refit_every=10)
+    out = tune_arima(_df(), max_p=1, max_q=1, cfg=fast)
+    assert out["cfg"] == fast and out["orders_tried"] == 4
+
+
+def _d(p, verdict):
+    return {"p": p, "dm": 0.0, "verdict": verdict, "n": 40}
+
+
+def test_check_pass():
+    from evaluation.tuning import held_out_check
+    s, r = held_out_check(_d(0.30, "no difference"), _d(0.01, "A better"))
+    assert s == "pass" and r
+
+
+def test_check_fail_vs_naive():
+    from evaluation.tuning import held_out_check
+    s, r = held_out_check(_d(0.013, "A worse"), None)
+    assert s == "fail" and "naive" in r and "0.013" in r
+
+
+def test_check_fail_vs_default():
+    from evaluation.tuning import held_out_check
+    s, r = held_out_check(_d(0.40, "no difference"), _d(0.015, "A worse"))
+    assert s == "fail" and "ARIMA(1,0,1)" in r and "naive" not in r
+
+
+def test_output_has_check_fields():
+    out = tune_arima(_df(), max_p=1, max_q=1, cfg=dict(lookback=750, refit_every=10))
+    assert out["held_out_check"] in ("pass", "fail") and out["check_reason"]
+

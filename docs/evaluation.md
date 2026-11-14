@@ -19,7 +19,9 @@ Two separate systems. Do not mix their holdouts.
 - Squared or absolute loss, Newey-West HAC, Harvey-Leybourne-Newbold correction
 - Needs at least 10 paired observations
 - `step < h` creates overlapping targets; HAC is required
-- Clark-West is not implemented; for nested model comparisons, treat DM p-values with caution
+- Default HAC lags are `ceil(h / step) - 1`; `run_backtest` uses `step = h`, so lags are 0 there
+- Clark-West (`cw_test.py`): MSPE-adjusted, one-sided (H1: candidate better), Newey-West variance with the same lags, standard normal p-value; `cw_table` runs it only for models that nest naive (`drift`, `arima`); `compare_models` shows it as "CW p-value"
+- Drift reference: when `drift` is in the run, `compare_models` adds "DM p vs drift" and reports add `dm_drift` / `verdict_drift`; naive stays the primary benchmark
 
 ### Model tuning
 - ARIMA: grid over `p,q`, fixed `d=0`, select on validation RMSE, tie-break smaller `p+q`, evaluate once on test

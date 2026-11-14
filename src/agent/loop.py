@@ -3,6 +3,7 @@ import json, time, uuid, re, threading
 from src.tools.registry import schemas
 from .skills import build_system_prompt
 from .guardrails import safe_call, truncate
+from .scope import cap_block, count_call
 from .logging_utils import log_event
 
 MAX_EMPTY_RETRIES = 2
@@ -11,6 +12,11 @@ MAX_DUPLICATES = 2          # CONSECUTIVE repeated calls before forcing a final 
 MAX_POLLS = 6               # consecutive "running" results before a nudge
 TOOL_TIMEOUT = 300          # seconds per tool call (LLM timeout belongs in the HTTP client)
 HISTORY_KEEP = 30
+LOAD_INPUT_ERRORS = {"BAD_TICKER", "DATA_FETCH_FAILED", "BAD_DATE", "NOT_ENOUGH_DATA"}
+NO_FALLBACK_TOOLS = {"list_artifacts"}   # saved data must not replace a failed load_data (case I01)
+NO_FALLBACK_MSG = ("load_data failed earlier in this request, so saved data must not replace it. "
+                   "Do not use another dataset or ticker. Tell the user what failed and ask for a "
+                   "valid ticker or dates.")
 
 
 def to_openai_tools(specs):
@@ -229,6 +235,8 @@ def run_agent(question, llm, max_steps=12, run_timeout=900, on_event=None, histo
     cache = {}
     used_tools = False
     last_hint = None
+    failed_load = False
+    done = {}
 
     def conclude(status, step, content):
         answer, bad = None, []
@@ -276,7 +284,10 @@ def run_agent(question, llm, max_steps=12, run_timeout=900, on_event=None, histo
             t_call = time.time()
 
             key = _key(name, raw_args)
-            if key in cache:
+            if failed_load and name in NO_FALLBACK_TOOLS:
+                result = {"ok": False, "error": {"code": "NO_FALLBACK", "message": NO_FALLBACK_MSG}}
+                meta = {"ok": False, "error": "NO_FALLBACK", "blocked": True}
+            elif key in cache:
                 result, meta = cache[key]
                 if not isinstance(result, dict):
                     result = {"result": result}
@@ -284,6 +295,8 @@ def run_agent(question, llm, max_steps=12, run_timeout=900, on_event=None, histo
                           "result. Do not call again, write the final answer."}
                 meta = {**meta, "cached": True}
                 dup_count += 1
+            elif cap_block(name, done):
+                result, meta = cap_block(name, done)
             else:
                 dup_count = 0                       # only consecutive duplicates count
                 budget = run_timeout - (time.time() - t0)
@@ -297,6 +310,9 @@ def run_agent(question, llm, max_steps=12, run_timeout=900, on_event=None, histo
                     if meta.get("ok"):              # cache finished successes only
                         cache[key] = (result, meta)
             used_tools = True
+            count_call(name, result, meta, done)
+            if name == "load_data" and not meta.get("ok") and _err_code(result) in LOAD_INPUT_ERRORS:
+                failed_load = True
             dt = time.time() - t_call
 
             log_event(run_id=run_id, step=step, tool=name, **meta)
