@@ -55,8 +55,8 @@ The agent itself is evaluated too (`src/agent_eval/`): a frozen set of cases wit
 Requirements: [conda](https://github.com/conda-forge/miniforge) and [Ollama](https://ollama.com). A machine with 16 GB of RAM or more is recommended for the local LLM and Kronos.
 
 ```bash
-git clone https://github.com/<your-username>/<repo>.git
-cd <repo>
+git clone https://github.com/qbao96xb/quant-research-agent
+cd quant-research-agent
 
 conda env create -f environment.yml
 conda activate quant-kronos
