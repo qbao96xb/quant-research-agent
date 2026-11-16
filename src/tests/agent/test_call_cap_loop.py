@@ -69,12 +69,12 @@ def test_second_capped_call_is_blocked(monkeypatch, calls):
     assert r["status"] == "done"
 
 
-def test_identical_repeat_gets_cached_result(monkeypatch, calls):
+def test_identical_repeat_ends_with_answer(monkeypatch, calls):
     use_tools(monkeypatch, calls, [OK])
     r = loop.run_agent("Report on KO", two_reports({"ticker": "KO"}, {"ticker": "KO"}))
     assert calls == ["make_report"]
-    assert "Duplicate call" in tool_msgs(r)[1]
-    assert "CALL_CAP" not in tool_msgs(r)[1]
+    assert len(tool_msgs(r)) == 1
+    assert r["answer"] == "Report done."
 
 
 def test_failed_call_does_not_count(monkeypatch, calls):

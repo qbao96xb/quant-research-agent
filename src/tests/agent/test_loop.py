@@ -117,11 +117,11 @@ def test_bad_ticker_is_passed_to_model(monkeypatch):
 def test_duplicate_calls_force_final_answer():
     r = loop.run_agent("x", DupLLM(), max_steps=10)
     assert r["status"] == "done"
-    assert r["steps"] == 3
+    assert r["steps"] == 2
     assert r["answer"] == "final from cache"
     notes = [m for m in r["messages"]
              if m["role"] == "tool" and "Duplicate call" in m["content"]]
-    assert len(notes) == 2
+    assert len(notes) == 0
 
 def test_running_status_not_cached(monkeypatch):
     seq = iter([{"ok": True, "status": "running"},

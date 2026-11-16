@@ -7,6 +7,7 @@ CLARIFY_Q = re.compile(r"\?|(?i:\b(which|please (provide|specify|tell)|i need to
 DEFAULT_WORDS = re.compile(r"(?i)\b(assum\w*|default|i('| wi)ll use|most recent|latest|no saved|no artifacts?)\b")
 REFUSE_DEFAULT = re.compile(r"(?i)(cannot|can't|unable|not able|not available|not supported|no tool|don't have|do not have|not (financial|investment) advice)")
 ARG_ERRORS = {"BAD_ARGUMENT", "UNKNOWN_TOOL", "UNPARSEABLE", "BAD_MODEL", "BAD_DATE"}
+REFUSED = {"BAD_ARGUMENT", "UNKNOWN_TOOL", "BAD_MODEL", "BAD_DATE", "OVER_BUDGET"}  # rejected before any work
 OK_FINISH = {"done"}
 # Whole numbers 1-20 are parameters (horizon, window, offered options), not claims; tools cap h at 20 (schemas.py).
 PARAM_INT = re.compile(r"(?<![\w.,+-])(?:[1-9]|1\d|20)(?!\.\d|,\d|[\w%])")
@@ -14,6 +15,12 @@ PARAM_INT = re.compile(r"(?<![\w.,+-])(?:[1-9]|1\d|20)(?!\.\d|,\d|[\w%])")
 # ---------- helpers ----------
 def called(run):
     return [t["tool"] for t in run["trace"]]
+
+
+def counted(run):
+    """Calls that did work: a call refused before running (REFUSED codes) does not count toward max_calls."""
+    return [t["tool"] for t in run["trace"]
+            if ((t["out"] if isinstance(t["out"], dict) else {}).get("error") or {}).get("code") not in REFUSED]
 
 
 def error_codes(run):
@@ -88,7 +95,8 @@ def score(case, run):
     for t in case.get("must_not_call", []):
         if t in names: fails.append("WRONG_TOOL")
     for t, k in case.get("max_calls", {}).items():
-        if names.count(t) > k: fails.append("WRONG_TOOL")
+        n = counted(run).count(t) if k > 0 else names.count(t)  # a 0 limit counts every attempt
+        if n > k: fails.append("WRONG_TOOL")
 
     # 3. Content checks (final answer only)
     for s in case.get("answer_must_contain", []):

@@ -2,8 +2,10 @@
 import json, time, uuid, re, threading
 from src.tools.registry import schemas
 from .skills import build_system_prompt
-from .guardrails import safe_call, truncate
+from .guardrails import safe_call
+from .fit_output import fit_json
 from .scope import cap_block, count_call
+from .repeats import only_repeats, REPEAT_MSG
 from .logging_utils import log_event
 
 MAX_EMPTY_RETRIES = 2
@@ -270,8 +272,8 @@ def run_agent(question, llm, max_steps=12, run_timeout=900, on_event=None, histo
                 "tool call, or give the final answer."})
             continue
 
-        if not calls:
-            return conclude("done", step, content)
+        if not calls or only_repeats(calls, cache, _key, log_event, run_id, step):
+            return conclude("done", step, content if not calls else _force_final(llm, run_id, view(), REPEAT_MSG))
 
         assistant = _clean_msg(msg)
         messages.append(assistant)
@@ -318,7 +320,7 @@ def run_agent(question, llm, max_steps=12, run_timeout=900, on_event=None, histo
             log_event(run_id=run_id, step=step, tool=name, **meta)
             emit("tool_end", step=step, tool=name, ok=meta.get("ok"), elapsed=dt)
             messages.append({"role": "tool", "tool_call_id": tc["id"],
-                             "content": truncate(json.dumps(result))})
+                             "content": fit_json(result)})
             if not meta.get("ok") and _err_code(result) in ("INTERNAL", "TIMEOUT"):
                 internal_errors += 1
 
